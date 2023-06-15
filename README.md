@@ -2,7 +2,7 @@
 
 ![release](https://img.shields.io/static/v1?label=version&message=v1.0&color=orange)
 
-This tool allows you perform a little enumeration scan on a target in order to get usefull informations
+This tool allows you to perform a little enumeration scan on a target in order to get usefull informations
 
 ## 🎯 Features
 ![image](https://github.com/hashgrem/ctf-web-enum/assets/44004683/7c8c3fe1-2303-4eb8-b655-7e2a45bcd9ea)
