@@ -4,6 +4,13 @@ import re
 import sys
 from datetime import datetime
 import time
+import argparse
+
+def options():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-u', '--url', type=str, required=True, help='url you want to scan')
+
+    return parser.parse_args().url
 
 def is_valid_url(url):
     regex = re.compile(
@@ -30,15 +37,19 @@ def lil_nikto_scan(url):
     x_powered_by = response.headers.get("X-Powered-By")
 
     if server is not None:
-        print(f">>> {Fore.GREEN}[+] Webserver is  : {server}{Style.RESET_ALL}")
+        print(f">>> {Fore.GREEN}[+] Webserver: {server}{Style.RESET_ALL}")
     if x_powered_by is not None:
-        print(f">>> {Fore.GREEN}[+] Webserver uses :  {x_powered_by}{Style.RESET_ALL}")
+        print(f">>> {Fore.GREEN}[+] Webserver uses:  {x_powered_by}{Style.RESET_ALL}")
     
     if "Content-Encoding" in response.headers:
-        print(f">>> {Fore.YELLOW}[-] The server supports compression.{Style.RESET_ALL}")
+        print(f">>> {Fore.YELLOW}[-] The server supports compression{Style.RESET_ALL}")
     else:
-        print(f">>> {Fore.YELLOW}[-] The server doesn't support compression.{Style.RESET_ALL}")
-      
+        print(f">>> {Fore.YELLOW}[-] The server doesn't support compression{Style.RESET_ALL}")
+    
+    if "Content-Type" in response.headers:
+        ct = response.headers.get("Content-Type")
+        print(f">>> {Fore.YELLOW}[-] Content-Type found: {ct}{Style.RESET_ALL}")
+
     version_regex = re.compile(r"\d+\.\d+(\.\d+)?")
     for header in response.headers:
         match = version_regex.search(response.headers[header])
@@ -65,9 +76,9 @@ def lil_nikto_scan(url):
     try:
         response = requests.get(url, headers=headers)
 
-        header1 = "The anti-clickjacking X-Frame-Options header is not present."
-        header2 = "The X-XSS-Protection header is not defined."
-        header3 = "The X-Content-Type-Options header is not set."
+        header1 = "The anti-clickjacking X-Frame-Options header is not present"
+        header2 = "The X-XSS-Protection header is not defined"
+        header3 = "The X-Content-Type-Options header is not set"
 
         if "X-Frame-Options" not in response.headers:
             print(f">>> {Fore.GREEN}[+] {header1}{Style.RESET_ALL}")
@@ -75,52 +86,65 @@ def lil_nikto_scan(url):
             print(f">>> {Fore.GREEN}[+] {header2}{Style.RESET_ALL}")
         if "X-Content-Type-Options" not in response.headers:
             print(f">>> {Fore.GREEN}[+] {header3}{Style.RESET_ALL}")
+
+        #check for csp
+        csp_header = response.headers.get('Content-Security-Policy')
+        if csp_header:
+            print(f">>> {Fore.GREEN}[+] A Content-Security-Policy (CSP) is present{Style.RESET_ALL}")
+            print(csp_header)
+        else:
+            print(f">>> {Fore.YELLOW}[-] No Content-Security-Policy (CSP) found{Style.RESET_ALL}")
     except:
         print("[!] Error occured while sending request to the URL")
 
 def check_robots_txt(url):
     try:
-        r = requests.get(url + "/robots.txt")
+        r = requests.get(url + "robots.txt")
         if r.status_code == 200:
-            print(f">>> {Fore.GREEN}[+] robots.txt is publicly accessible.{Style.RESET_ALL}")
+            print(f">>> {Fore.GREEN}[+] robots.txt is publicly accessible{Style.RESET_ALL}")
             print(f">>> {Fore.GREEN}[+] Content of robots.txt: {Style.RESET_ALL}\n" + r.text)
         else:
-            print(f">>> {Fore.YELLOW}[-] robots.txt is not publicly accessible.{Style.RESET_ALL}")
+            print(f">>> {Fore.RED}[-] robots.txt not found{Style.RESET_ALL}")
     except requests.exceptions.RequestException as e:
         print(">>> [-] Exception Occured: " + str(e))
 
 def check_sitemap(url):
     try:
-        r = requests.get(url + "/sitemap.xml")
+        r = requests.get(url + "sitemap.xml")
         if r.status_code == 200:
-            print(f">>> {Fore.GREEN}[+] sitemap.xml is publicly accessible.{Style.RESET_ALL}")
+            print(f">>> {Fore.GREEN}[+] sitemap.xml found !{Style.RESET_ALL}")
         else:
-            print(f">>> {Fore.YELLOW}[-] sitemap.xml is not publicly accessible.{Style.RESET_ALL}")
+            print(f">>> {Fore.RED}[-] sitemap.xml not found{Style.RESET_ALL}")
     except requests.exceptions.RequestException as e:
         print(">>> [-] Exception Occured: " + str(e))
 
 def check_cookies(url):
-	session = requests.Session()
-	cookie = session.cookies.get_dict()
+    session = requests.Session()
+    response = session.get(url)
+    cookie = session.cookies.get_dict()
 
-	if len(cookie) > 0:
-		print(f">>> {Fore.GREEN}[+] Some cookies has been found{Style.RESET_ALL}")
-	else:
-		print(f">>> {Fore.YELLOW}[-] No cookies found.{Style.RESET_ALL}")
+    if len(cookie) > 0:
+        print(f">>> {Fore.GREEN}[+] Some cookies has been found:{Style.RESET_ALL}")
+        print(cookie)
+    else:
+        print(f">>> {Fore.RED}[-] No cookies found{Style.RESET_ALL}")
 
 def find_github(url):
     try:
         r = requests.get(url + ".git")
         valid_codes = [200, 204, 301, 302, 307, 401, 403, 407]
         if r.status_code in valid_codes:
-            print(f">>> {Fore.GREEN}[+] A github repository has been found. Might be vulnerable to gitDumper{Style.RESET_ALL}")
+            print(f">>> {Fore.GREEN}[+] A github repository has been found ! Might be vulnerable to gitDumper{Style.RESET_ALL}")
+            if r.status_code == 200:
+                print(f">>> {Fore.GREEN}[+] Response content:{Style.RESET_ALL}")
+                print(r.text)
         else:
-            print(f">>> {Fore.RED}[-] No github repository found.{Style.RESET_ALL}")
+            print(f">>> {Fore.RED}[-] No github repository found{Style.RESET_ALL}")
     except requests.exceptions.RequestException as e:
         print(f">>> {Fore.RED}[-] Exception Occured: {e}{Style.RESET_ALL}")
 
 def check_backup_files(url):
-	ext = ["",".sql",".json", ".jsp", ".bin", ".xlsx", ".rtf", ".docx", ".env", ".js", ".inc", ".asa", ".config", ".java", ".asp",".aspx",".xml",".do",".pdf",".json",".php",".backup",".bck",".old",".save",".bak",".sav","~",".copy",".old",".orig",".tmp",".txt",".back",".bkp",".bac",".tar",".gz",".tar.gz",".zip",".rar"]
+	ext = ["",".sql",".json", ".jsp", ".bin", ".xlsx","xls", ".rtf", ".docx", ".env", ".js", ".inc", ".asa", ".config", ".java", ".asp",".aspx",".xml",".do",".pdf",".json",".php",".backup",".bck",".old",".OLD",".save",".bak",".sav","~",".copy",".orig",".tmp",".txt",".back",".bkp",".bac",".tar",".gz",".tar.gz",".zip",".rar"]
 	file_names = ["config", "index", "backup", "conf", "login", "log", "logs", ".php", "site", ".htaccess", ".htpasswd", ".zip", "admin", "administrator","app", "archive", "private"]
 	valid_codes = [200, 204, 301, 302, 307, 401, 403, 407]
 
@@ -139,15 +163,28 @@ def check_backup_files(url):
 
 if __name__ == "__main__":
 
-	init()
-	URL = "http://localhost:1234/"
-	print("\n--------------------------------------------")
-	print("  Target: "+ URL)
-	print(f"  Started at: {datetime.now()}")
-	print("--------------------------------------------\n")
-	lil_nikto_scan(URL)
-	check_robots_txt(URL)
-	check_sitemap(URL)
-	find_github(URL)
-	check_cookies(URL)
-	check_backup_files(URL)
+    url = options()
+
+    init()
+
+    if not is_valid_url(url):
+        print(f">>> {Fore.RED}[!] Incorrect url format{Style.RESET_ALL}")
+        sys.exit()
+    else:
+        if not url.endswith('/'):
+            url += '/'
+
+    # Banner
+    print("ctf-web-enum v1.0")
+    print("\n-------------------------------------------------------------")
+    print("  + Target: "+ url)
+    print(f"  + Started at: {datetime.now()}")
+    print("-------------------------------------------------------------\n")
+
+    # Call functions
+    lil_nikto_scan(url)
+    check_robots_txt(url)
+    check_sitemap(url)
+    find_github(url)
+    check_cookies(url)
+    check_backup_files(url)
