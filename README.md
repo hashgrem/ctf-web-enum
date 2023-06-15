@@ -1,5 +1,7 @@
 # ctf-web-enum v1.0
 
+This tool allows you perform a little enumeration scan on a target in order to get usefull informations
+
 ## 🎯 Features
 ![image](https://github.com/hashgrem/ctf-web-enum/assets/44004683/7c8c3fe1-2303-4eb8-b655-7e2a45bcd9ea)
 
@@ -39,7 +41,7 @@ options:
 python ctf-web-enum.py.py -u http://example.com/
 ```
 
-## Disclaimer
+## 🧏‍♂️ Disclaimer
 
 Sometimes in CTF, directory and file scanning isn't allowed. So, don't forget to read rules and if it's not allowed, comment the `check_backup_files()` function's call.
 
