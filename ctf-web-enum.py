@@ -1,10 +1,10 @@
 from colorama import Fore, Back, Style, init
+from datetime import datetime
 import requests
+import argparse
+import time
 import re
 import sys
-from datetime import datetime
-import time
-import argparse
 
 def options():
     parser = argparse.ArgumentParser()
