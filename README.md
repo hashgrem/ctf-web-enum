@@ -23,7 +23,7 @@ pip install -r requirements.txt
 
 ## 📈 Usage
 
-Just specify url you want to test:
+Just specify url you want to test with `-u` or `--url` switch
 
 ```
 python ctf-web-enum.py.py -h
