@@ -1,5 +1,7 @@
 # ctf-web-enum v1.0
 
+![release](https://img.shields.io/static/v1?label=version&message=v1.0&color=orange)
+
 This tool allows you perform a little enumeration scan on a target in order to get usefull informations
 
 ## 🎯 Features
